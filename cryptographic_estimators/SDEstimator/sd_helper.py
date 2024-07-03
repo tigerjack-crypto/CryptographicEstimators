@@ -17,14 +17,33 @@
 
 
 from math import log2, comb, inf, ceil
+import functools
 
 
+@functools.cache
 def binom(n: int, k: int):
-    """
-    binomial coefficient
-    """
-    return comb(int(n), int(k))
+    return comb(n, k)
 
+
+# @functools.lru_cache(maxsize=262144)
+@functools.cache
+def _gaussian_elimination_complexity(n: int, k: int, r: int):
+    if r != 0:
+        # return (r**2 + 2**r + (n - k - r)) * int(((n + r - 1) / r))
+        return (r**2 + 2**r + (n - k - r)) * (n + r - 1) // r
+
+    return (n - k)**2
+
+
+def _list_merge_complexity(L: float, l: int, hmap: bool):
+    if L == 1:
+        return 1
+    if not hmap:
+        return max(1, 2 * int(math.log2(L)) * L + L**2 // 2**l)
+    else:
+        # FIX error OverflowError: int too large to convert to float
+        # return 2 * L + L ** 2 // 2 ** l
+        return 2 * L + (int(L**2) >> l)
 
 def min_max(a: int, b: int, s: bool):
     """
@@ -67,33 +86,34 @@ def __round_or_truncate_to_given_precision(T: float, M: float, truncate: bool, p
     return '{:.{p}f}'.format(T, p=precision), '{:.{p}f}'.format(M, p=precision)
 
 
-def _gaussian_elimination_complexity(n: int, k: int, r: int):
-    """
-    Complexity estimate of Gaussian elimination routine
+# def _gaussian_elimination_complexity(n: int, k: int, r: int):
+#     """
+#     Complexity estimate of Gaussian elimination routine
 
-    INPUT:
+#     INPUT:
 
-    - ``n`` -- Row additions are perfomed on ``n`` coordinates
-    - ``k`` -- Matrix consists of ``n-k`` rows
-    - ``r`` -- Blocksize of method of the four russian for inversion, default is zero
+#     - ``n`` -- Row additions are perfomed on ``n`` coordinates
+#     - ``k`` -- Matrix consists of ``n-k`` rows
+#     - ``r`` -- Blocksize of method of the four russian for inversion, default is zero
 
-    [Bar07]_ Bard, G.V.: Algorithms for solving linear and polynomial systems of equations over finite fields
-    with applications to cryptanalysis. Ph.D. thesis (2007)
+#     [Bar07]_ Bard, G.V.: Algorithms for solving linear and polynomial systems of equations over finite fields
+#     with applications to cryptanalysis. Ph.D. thesis (2007)
 
-    [BLP08] Bernstein, D.J., Lange, T., Peters, C.: Attacking and defending the mceliece cryptosystem.
-    In: International Workshop on Post-Quantum Cryptography. pp. 31–46. Springer (2008)
+#     [BLP08] Bernstein, D.J., Lange, T., Peters, C.: Attacking and defending the mceliece cryptosystem.
+#     In: International Workshop on Post-Quantum Cryptography. pp. 31–46. Springer (2008)
 
-    EXAMPLES::
+#     EXAMPLES::
 
-        sage: from cryptographic_estimators.SDEstimator import _gaussian_elimination_complexity
-        sage: _gaussian_elimination_complexity(n=100,k=20,r=1) # random
+#         sage: from cryptographic_estimators.SDEstimator import _gaussian_elimination_complexity
+#         sage: _gaussian_elimination_complexity(n=100,k=20,r=1) # random
 
-    """
+#     """
 
-    if r != 0:
-        return (r ** 2 + 2 ** r + (n - k - r)) * int(((n + r - 1) / r))
+#     print("Their GJE")
+#     if r != 0:
+#         return (r ** 2 + 2 ** r + (n - k - r)) * int(((n + r - 1) / r))
 
-    return (n - k) ** 2
+#     return (n - k) ** 2
 
 
 def _optimize_m4ri(n: int, k: int, mem=inf):
@@ -135,29 +155,6 @@ def _mem_matrix(n: int, k: int, r: int):
     return n - k + 2 ** r
 
 
-def _list_merge_complexity(L: float, l: int, hmap: bool):
-    """
-    Complexity estimate of merging two lists exact
-
-    INPUT:
-
-    - ``L`` -- size of lists to be merged
-    - ``l`` -- amount of bits used for matching
-    - ``hmap`` -- indicates if hashmap is being used (Default 0: no hashmap)
-
-    EXAMPLES::
-
-        sage: from cryptographic_estimators.SDEstimator import _list_merge_complexity
-        sage: _list_merge_complexity(L=2**16,l=16,hmap=1) # random
-
-    """
-
-    if L == 1:
-        return 1
-    if not hmap:
-        return max(1, 2 * int(log2(L)) * L + L ** 2 // 2 ** l)
-    else:
-        return 2 * L + L ** 2 // 2 ** l
 
 
 def _indyk_motwani_complexity(L: float, l: int, w: int, hmap: bool):
